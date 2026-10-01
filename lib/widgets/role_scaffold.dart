@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../features/auth/presentation/auth_controller.dart';
+import '../features/common/settings_page.dart';
 import 'detail_sheet.dart';
 import 'endpoint_list_view.dart';
 
@@ -43,29 +43,6 @@ class RoleScaffold extends ConsumerStatefulWidget {
 class _RoleScaffoldState extends ConsumerState<RoleScaffold> {
   int _index = 0;
 
-  Future<void> _confirmLogout() async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('تسجيل الخروج'),
-        content: const Text('هل تريد الخروج من حسابك؟'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('خروج'),
-          ),
-        ],
-      ),
-    );
-    if (ok == true && mounted) {
-      await ref.read(authControllerProvider.notifier).logout();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     final tab = widget.tabs[_index];
@@ -84,9 +61,11 @@ class _RoleScaffoldState extends ConsumerState<RoleScaffold> {
           ),
           actions: [
             IconButton(
-              tooltip: 'تسجيل الخروج',
-              icon: const Icon(Icons.logout),
-              onPressed: _confirmLogout,
+              tooltip: 'الإعدادات',
+              icon: const Icon(Icons.settings_outlined),
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const SettingsPage()),
+              ),
             ),
           ],
         ),
