@@ -40,6 +40,23 @@ dependencies:
   logger: ^2.4.0
   connectivity_plus: ^6.0.5
 
+  # Location tracking (driver)
+  geolocator: ^13.0.1
+  permission_handler: ^11.3.1
+
+  # Maps (OpenStreetMap — no API key required)
+  flutter_map: ^7.0.2
+  latlong2: ^0.9.1
+
+  # Push notifications (local for now; FCM wiring documented separately)
+  flutter_local_notifications: ^18.0.1
+
+  # App metadata
+  package_info_plus: ^8.1.1
+
+  # Phone / launcher
+  url_launcher: ^6.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
