@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../auth/presentation/auth_controller.dart';
+import '../../../widgets/detail_sheet.dart';
 import '../../../widgets/role_scaffold.dart';
 
 class ManagerHome extends ConsumerWidget {
@@ -13,8 +14,8 @@ class ManagerHome extends ConsumerWidget {
     return RoleScaffold(
       title: 'لوحة الإدارة',
       subtitle: 'مرحباً ${user.fullName}',
-      tabs: const [
-        RoleTab(
+      tabs: [
+        const RoleTab(
           icon: Icons.dashboard_outlined,
           label: 'ملخص',
           endpoint: '/dashboard/summary/',
@@ -23,18 +24,28 @@ class ManagerHome extends ConsumerWidget {
           icon: Icons.list_alt,
           label: 'الطلبات',
           endpoint: '/orders/',
+          detailActions: const [
+            DetailAction(label: 'إسناد لسائق', actionKey: 'assign', icon: Icons.person_add_alt),
+            DetailAction(label: 'إلغاء الطلب', actionKey: 'cancel', icon: Icons.cancel_outlined, destructive: true),
+          ],
+          actionEndpointBuilder: (r, k) => '/orders/${r["id"]}/$k/',
         ),
         RoleTab(
           icon: Icons.local_shipping_outlined,
           label: 'السائقون',
           endpoint: '/drivers/',
+          detailActions: const [
+            DetailAction(label: 'تفعيل', actionKey: 'activate', icon: Icons.toggle_on),
+            DetailAction(label: 'إيقاف', actionKey: 'suspend', icon: Icons.block, destructive: true),
+          ],
+          actionEndpointBuilder: (r, k) => '/drivers/${r["id"]}/$k/',
         ),
-        RoleTab(
+        const RoleTab(
           icon: Icons.people_outline,
           label: 'العملاء',
           endpoint: '/customers/',
         ),
-        RoleTab(
+        const RoleTab(
           icon: Icons.person_outline,
           label: 'حسابي',
           endpoint: '/auth/me/',

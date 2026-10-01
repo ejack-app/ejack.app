@@ -2,13 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../features/auth/presentation/auth_controller.dart';
+import 'detail_sheet.dart';
 import 'endpoint_list_view.dart';
 
 class RoleTab {
-  const RoleTab({required this.icon, required this.label, required this.endpoint});
+  const RoleTab({
+    required this.icon,
+    required this.label,
+    required this.endpoint,
+    this.detailActions = const [],
+    this.actionEndpointBuilder,
+  });
+
   final IconData icon;
   final String label;
   final String endpoint;
+  final List<DetailAction> detailActions;
+  final String Function(Map<String, dynamic> record, String action)?
+      actionEndpointBuilder;
 }
 
 /// Bottom-nav scaffold shared by driver / customer / manager screens.
@@ -32,6 +43,29 @@ class RoleScaffold extends ConsumerStatefulWidget {
 class _RoleScaffoldState extends ConsumerState<RoleScaffold> {
   int _index = 0;
 
+  Future<void> _confirmLogout() async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تسجيل الخروج'),
+        content: const Text('هل تريد الخروج من حسابك؟'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('خروج'),
+          ),
+        ],
+      ),
+    );
+    if (ok == true && mounted) {
+      await ref.read(authControllerProvider.notifier).logout();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final tab = widget.tabs[_index];
@@ -52,7 +86,7 @@ class _RoleScaffoldState extends ConsumerState<RoleScaffold> {
             IconButton(
               tooltip: 'تسجيل الخروج',
               icon: const Icon(Icons.logout),
-              onPressed: () => ref.read(authControllerProvider.notifier).logout(),
+              onPressed: _confirmLogout,
             ),
           ],
         ),
@@ -60,6 +94,8 @@ class _RoleScaffoldState extends ConsumerState<RoleScaffold> {
           key: ValueKey('${tab.label}#${tab.endpoint}'),
           title: tab.label,
           endpoint: tab.endpoint,
+          detailActions: tab.detailActions,
+          actionEndpointBuilder: tab.actionEndpointBuilder,
         ),
         bottomNavigationBar: NavigationBar(
           selectedIndex: _index,

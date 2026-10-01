@@ -1,0 +1,120 @@
+workflows:
+  android-release:
+    name: Android Release (AAB + APK)
+    max_build_duration: 60
+    instance_type: linux_x2
+    environment:
+      flutter: 3.47.5
+      java: 17
+      groups:
+        - ejack_android_signing   # Codemagic Env Group holding keystore secrets
+      vars:
+        API_BASE_URL: "https://ml.eijack.com/api"
+        PACKAGE_NAME: "com.ejack.ejack"
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: "claude/**"
+          include: true
+        - pattern: "main"
+          include: true
+    scripts:
+      - name: Flutter pub get
+        script: flutter pub get
+      - name: Flutter analyze
+        script: flutter analyze --no-fatal-infos
+      - name: Set up release keystore
+        script: |
+          if [ -n "$CM_KEYSTORE" ]; then
+            echo $CM_KEYSTORE | base64 --decode > android/app/ejack-release.keystore
+            cat > android/key.properties <<EOF
+          storePassword=$CM_KEYSTORE_PASSWORD
+          keyPassword=$CM_KEY_PASSWORD
+          keyAlias=$CM_KEY_ALIAS
+          storeFile=ejack-release.keystore
+          EOF
+          else
+            echo "WARNING: CM_KEYSTORE not set. Building unsigned."
+          fi
+      - name: Build AAB
+        script: |
+          flutter build appbundle --release \
+            --dart-define=API_BASE_URL="$API_BASE_URL"
+      - name: Build APK
+        script: |
+          flutter build apk --release \
+            --dart-define=API_BASE_URL="$API_BASE_URL"
+    artifacts:
+      - build/app/outputs/bundle/release/*.aab
+      - build/app/outputs/flutter-apk/*.apk
+      - build/app/outputs/mapping/release/mapping.txt
+    publishing:
+      email:
+        recipients:
+          - ah5555d@gmail.com
+        notify:
+          success: true
+          failure: true
+
+  ios-release:
+    name: iOS Release (IPA for TestFlight)
+    max_build_duration: 60
+    instance_type: mac_mini_m2
+    environment:
+      flutter: 3.47.5
+      xcode: latest
+      cocoapods: default
+      groups:
+        - ejack_ios_signing       # Codemagic Env Group with App Store Connect API key
+      vars:
+        API_BASE_URL: "https://ml.eijack.com/api"
+        BUNDLE_ID: "com.ejack.ejack"
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.ejack.ejack
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: "claude/**"
+          include: true
+        - pattern: "main"
+          include: true
+    scripts:
+      - name: Flutter pub get
+        script: flutter pub get
+      - name: Install iOS dependencies
+        script: |
+          cd ios
+          pod install
+          cd ..
+      - name: Set up signing
+        script: |
+          keychain initialize
+          app-store-connect fetch-signing-files "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
+          keychain add-certificates
+          xcode-project use-profiles
+      - name: Build IPA
+        script: |
+          flutter build ipa --release \
+            --dart-define=API_BASE_URL="$API_BASE_URL" \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
+      - flutter_drive.log
+    publishing:
+      email:
+        recipients:
+          - ah5555d@gmail.com
+        notify:
+          success: true
+          failure: true
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - Internal Testers
